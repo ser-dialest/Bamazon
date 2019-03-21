@@ -2,7 +2,7 @@ require("dotenv").config();
 var mysql = require("mysql");
 var inquirer = require("inquirer");
 
-var purchase = {};
+var cart = {};
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -45,23 +45,88 @@ function catalogue() {
                     catalogue();
                 }
                 else {
-                    purchase(answer.purchaseID);
-
-                    function purchase(choice) {
-                        connection.query(`SELECT * FROM products LEFT JOIN departments ON products.department = departments.id WHERE item_id = ${choice}`, function (err, res) {
-                            if (err) { throw err };
-                            console.log(res[0].product_name.padEnd(30, " ") + "\tPrice: " + res[0].customer_price.toFixed(2).padStart(8, " ") + "\t\t\t" + " Quantity in stock: " + res[0].stock_quantity.toFixed(0).padStart(6, " "));
-                            console.log(res[0].product_description.padEnd(70, " ") + "\tDepartment: " + res[0].name);
-                        })
-                    };
+                    purchase(answer.purchaseID);                  
                 };
             }); 
         })
     })
 };
 
+function purchase(choice) {
+    connection.query(`SELECT * FROM products LEFT JOIN departments ON products.department = departments.id WHERE item_id = ${choice}`, function (err, res) {
+        if (err) { throw err };
+        cart.item_id = res[0].item_id;
+        cart.customer_price = res[0].customer_price;
+        cart.stock_quantity = res[0].stock_quantity;
+        console.log();
+        console.log(res[0].product_name.padEnd(30, " ") + "\tPrice: " + res[0].customer_price.toFixed(2).padStart(8, " ") + "\t\t\t" + " Quantity in stock: " + res[0].stock_quantity.toFixed(0).padStart(6, " "));
+        console.log(res[0].product_description.padEnd(70, " ") + "\tDepartment: " + res[0].name);
+        inquirer.prompt([
+            {
+                type: "confirm",
+                message: "Is this the item you would like to purchase?",
+                name: "itemConfirm",
+                default: true
+            }
+        ]).then(function(answer) {
+            if (!answer.itemConfirm) {
+                console.log();
+                catalogue();
+            }
+            else {
+                purchaseConfirm();
+            }
+        })
+    })
+};
+
+function purchaseConfirm() {
+    inquirer.prompt([
+        {
+            type: "input",
+            message: "Enter the quantity you would like to purchase:",
+            name: "quantity",
+            validate: function validatePurchase(input) {
+                input = parseInt(input);
+                if (isNaN(input)) { return false }
+                else { return true };
+            }
+        }
+    ]).then(function (answer) {
+        var quantity = parseInt(answer.quantity);
+        if (quantity > cart.stock_quantity) {
+            console.log("Insufficient quantity to meet this order.");
+            purchaseConfirm();
+        }
+        else {
+            checkout(quantity);
+        }
+    });
+};
 
 
-
-
-
+function checkout(quantity) {
+    console.log();
+    console.log("Your order will cost $" + cart.customer_price*quantity + ".");
+    inquirer.prompt([
+        {
+            type: "confirm",
+            message: "Do you wish to confirm your order?",
+            name: "checkout",
+            default: true
+        }
+    ]).then(function(answer) {
+        if (!answer.checkout) {
+            console.log();
+            console.log("No order has been placed. Thank you for visiting!");
+            connection.end();
+        }
+        else {
+            connection.query("UPDATE products SET stock_quantity = " + (cart.stock_quantity - quantity) + " WHERE item_id = " + cart.item_id, function (err, res) {
+                if (err) { throw err };
+                console.log("Thank you for your purchase! Your order has been sent.");
+                connection.end();
+            });
+        }
+    });
+}
