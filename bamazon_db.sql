@@ -59,3 +59,6 @@ USE bamazon;
 UPDATE products
 SET product_description = "Mario's 16-bit premier for SNES. Ride Yoshi!"
 WHERE item_id = 13;
+
+USE bamazon;
+SELECT COUNT(*) FROM products;
