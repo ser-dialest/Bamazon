@@ -21,8 +21,10 @@ connection.connect(function(err) {
 function catalogue() {
     connection.query(`SELECT * FROM products LEFT JOIN departments ON products.department = departments.id`, function (err, res) {
         if (err) { throw err };
+        var ids = [];
         console.log("ID\t" + "Item".padEnd(30, " ") + "Product Description".padEnd(70, " ") + "Price".padStart(8, " ") + "\t" + "In Stock".padStart(8, " ") + "\tDepartment");        
         for (i=0; i<res.length; i++) {
+            ids.push(res[i].item_id);
             console.log(res[i].item_id + "\t" + res[i].product_name.padEnd(30, " ") + res[i].product_description.padEnd(70, " ") + res[i].customer_price.toFixed(2).padStart(8, " ") + "\t" + res[i].stock_quantity.toFixed(0).padStart(8, " ") + "\t" + res[i].name);
         };
         inquirer.prompt([
@@ -31,23 +33,14 @@ function catalogue() {
                 message: "Enter the ID of the item you would like to purchase:",
                 name: "purchaseID",
                 validate: function validatePurchase(input) {
-                    input = parseInt(input);
-                    if (isNaN(input)) { return false }
-                    else { return true };
+                    var inputNum = parseInt(input);
+                    if (!isNaN(inputNum) && ids.includes(inputNum)) { return true }
+                    else { return false };
                 }
             }
         ]).then(function (answer) {
-            connection.query("SELECT COUNT(*) AS 'count' FROM products WHERE item_id = " + parseInt(answer.purchaseID), function (err, res) {
-                if (err) { throw err };
-                if (res[0].count === 0) {
-                    console.log();
-                    console.log("Please enter a valid product ID");
-                    catalogue();
-                }
-                else {
-                    purchase(answer.purchaseID);                  
-                };
-            }); 
+            var number = parseInt(answer.purchaseID);
+            purchase(number);                  
         })
     })
 };
