@@ -46,14 +46,14 @@ function catalogue() {
 };
 
 function purchase(choice) {
-    connection.query(`SELECT * FROM products LEFT JOIN departments ON products.department = departments.id WHERE item_id = ${choice}`, function (err, res) {
+    connection.query(`SELECT * FROM products WHERE item_id = ${choice}`, function (err, res) {
         if (err) { throw err };
         cart.item_id = res[0].item_id;
         cart.customer_price = res[0].customer_price;
         cart.stock_quantity = res[0].stock_quantity;
         console.log();
         console.log(res[0].product_name.padEnd(30, " ") + "\tPrice: " + res[0].customer_price.toFixed(2).padStart(8, " ") + "\t\t\t" + " Quantity in stock: " + res[0].stock_quantity.toFixed(0).padStart(6, " "));
-        console.log(res[0].product_description.padEnd(70, " ") + "\tDepartment: " + res[0].name);
+        console.log(res[0].product_description.padEnd(70, " "));
         inquirer.prompt([
             {
                 type: "confirm",
@@ -100,7 +100,8 @@ function purchaseConfirm() {
 
 function checkout(quantity) {
     console.log();
-    console.log("Your order will cost $" + cart.customer_price*quantity + ".");
+    var sale = cart.customer_price*quantity;
+    console.log("Your order will cost $" + sale + ".");
     inquirer.prompt([
         {
             type: "confirm",
@@ -115,7 +116,7 @@ function checkout(quantity) {
             connection.end();
         }
         else {
-            connection.query("UPDATE products SET stock_quantity = " + (cart.stock_quantity - quantity) + " WHERE item_id = " + cart.item_id, function (err, res) {
+            connection.query("UPDATE products SET stock_quantity = stock_quantity -" + quantity + ", gross = gross + " + sale + "  WHERE item_id = " + cart.item_id, function (err, res) {
                 if (err) { throw err };
                 console.log("Thank you for your purchase! Your order has been sent.");
                 connection.end();

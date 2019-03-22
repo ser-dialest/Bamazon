@@ -127,21 +127,30 @@ function addInventory() {
                 }
             },
             {
+                type: "input",
+                message: "What was our total cost for these units?",
+                name: "cost",
+                validate: function validation(input) {
+                    var inputNum = parseInt(input);
+                    if (!isNaN(inputNum)) { return true }
+                    else { return false };
+                }
+            },
+            {
                 type: "confirm",
                 message: "Are you sure:",
                 name: "confirm",
                 default: true
             }
-
         ]).then(function (answers) {
             if (answers.confirm) {
                 var id = parseInt(answers.choice);
                 var restock = parseInt(answers.addStock)
-                var quantity = res[id-1].stock_quantity + restock;
-                console.log(id);
-                console.log(res[id-1].stock_quantity, restock, quantity);
+                var cost = Number(answers.cost).toFixed(2);
+                // console.log(id);
+                // console.log(res[id-1].stock_quantity, restock, quantity);
 
-                connection.query("UPDATE products SET stock_quantity = " + quantity + " WHERE item_id = " + id, function (err, res) {
+                connection.query(`UPDATE products SET stock_quantity = stock_quantity + ${restock}, overhead_cost = overhead_cost + ${cost} WHERE item_id = ${id}`, function (err, res) {
                     if (err) { throw err };
                     console.log(res.affectedRows + " record(s) updated");
                     another();
