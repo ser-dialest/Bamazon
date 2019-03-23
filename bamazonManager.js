@@ -147,9 +147,6 @@ function addInventory() {
                 var id = parseInt(answers.choice);
                 var restock = parseInt(answers.addStock)
                 var cost = Number(answers.cost).toFixed(2);
-                // console.log(id);
-                // console.log(res[id-1].stock_quantity, restock, quantity);
-
                 connection.query(`UPDATE products SET stock_quantity = stock_quantity + ${restock}, overhead_cost = overhead_cost + ${cost} WHERE item_id = ${id}`, function (err, res) {
                     if (err) { throw err };
                     console.log(res.affectedRows + " record(s) updated");
@@ -205,6 +202,16 @@ function addProduct() {
                 }
             },
             {
+                type: "input",
+                message: "What was our total cost for these units?",
+                name: "cost",
+                validate: function validation(input) {
+                    var inputNum = parseInt(input);
+                    if (!isNaN(inputNum)) { return true }
+                    else { return false };
+                }
+            },
+            {
                 type: "list",
                 message: "To which department does this product belong?",
                 choices: names,
@@ -220,8 +227,9 @@ function addProduct() {
             if (answers.confirm) {
                 var index = names.indexOf(answers.department);
                 var departmentId = ids[index];
-                connection.query(`INSERT INTO products (product_name, product_description, customer_price, stock_quantity, department) 
-                VALUES ("${answers.name}", "${answers.description}", ${Number(answers.price).toFixed(2)}, ${parseInt(answers.quantity)}, ${parseInt(departmentId)})`, function (err, res) {
+                var cost = Number(answers.cost).toFixed(2);
+                connection.query(`INSERT INTO products (product_name, product_description, customer_price, stock_quantity, overhead_cost, department) 
+                VALUES ("${answers.name}", "${answers.description}", ${Number(answers.price).toFixed(2)}, ${parseInt(answers.quantity)}, ${cost}, ${parseInt(departmentId)})`, function (err, res) {
                     if (err) { throw err };
                     console.log(res.affectedRows + " record(s) updated");
                     another();
